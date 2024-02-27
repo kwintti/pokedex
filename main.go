@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
     "errors"
+    "github.com/kwintti/pokecache"
 )
 
 func main() {
@@ -67,21 +68,33 @@ func commandHelp(commands map[string]cliCommand) error {
     for _, cmd := range commands {
         fmt.Println(cmd.name, ": ", cmd.description)
     }
+    pokecache.NewCache(5)
     return nil 
 }
 
 var url_ cliCommand
+var pokemons pokemonAPI
+var cache = pokecache.NewCache(60)
+
 
 func getPokemons()  error {
     urlp := &url_
     if len(urlp.url) == 0 {
         url_.url = "https://pokeapi.co/api/v2/location-area/"
     }
-
-    pokemons, err := apiCall(url_.url)
-    if err != nil {
-        return err
+    var body []byte
+    var err error
+    val, found := cache.Get(urlp.url)
+    body = val
+    if !found {
+        fmt.Println("No cache found, getting pokemons from API")
+        body, err = apiCall(urlp.url)
+        if err != nil {
+            return err
+        }
+        cache.Add(urlp.url, body)
     }
+    json.Unmarshal([]byte(body), &pokemons)
     for i, _ := range pokemons.Results {
         fmt.Println(pokemons.Results[i].Name)
     }
@@ -92,17 +105,28 @@ func getPokemons()  error {
     return err
 }
 
+
+
 func getPokemonsBack() error {
     urlp := &url_
     if len(urlp.urlb) == 0 {
         err := errors.New("Already on the first page")
         return err
     }
-
-    pokemons, err := apiCall(url_.urlb)
-    if err != nil {
-        return err
+    var body []byte
+    var err error
+    val, found := cache.Get(urlp.urlb)
+    body = val
+    if !found {
+        fmt.Println("No cache found, getting pokemons from API")
+        body, err = apiCall(urlp.urlb)
+        if err != nil {
+            return err
+        }
+        cache.Add(urlp.urlb, body)
     }
+
+    json.Unmarshal([]byte(body), &pokemons)
     for i, _ := range pokemons.Results {
         fmt.Println(pokemons.Results[i].Name)
     }
@@ -112,10 +136,13 @@ func getPokemonsBack() error {
     if pokemons.Previous != nil {
         urlp.urlb = *pokemons.Previous
     }
+    if pokemons.Next != nil {
+        urlp.url = *pokemons.Next
+    }
     return err
 } 
 
-func apiCall(url string) (pokemonAPI, error) {
+func apiCall(url string) ([]byte, error) {
     res, err := http.Get(url)
     if err != nil {
         log.Fatal(err)
@@ -128,10 +155,8 @@ func apiCall(url string) (pokemonAPI, error) {
     if err != nil {
         log.Fatal(err)
     }
-    var pokemons pokemonAPI
-    json.Unmarshal([]byte(body), &pokemons)
 
-    return pokemons, nil
+    return body, nil
 }
 
 

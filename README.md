@@ -12,7 +12,7 @@ Learning Go basics with this project.
 ##TO-DO
 - [x] Basic REPL with commands help and exit
 - [x] Commands map and mapb, call an API, get results, parse them and finally show them.
-- [ ] Caching
+- [x] Caching
 - [ ] Explore locations, find pokemons
 - [ ] Catch Pokemons
 - [ ] Inspect command, see details about Pokemons you have already encountered
