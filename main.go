@@ -10,6 +10,7 @@ import (
 	"os"
     "errors"
     "github.com/kwintti/pokecache"
+    "strings"
 )
 
 func main() {
@@ -19,6 +20,7 @@ func main() {
 
 
 func readingInput() {
+    params := "canalave-city-area"
     commands := make(map[string]cliCommand)
     commands = map[string]cliCommand{
         "help": {
@@ -41,19 +43,32 @@ func readingInput() {
             description: "Show previous 20 location areas",
             callback:    getPokemonsBack,
         },
+        "explore": {
+            name:        "exolore",
+            description: "Get pokemons in the area. Usage: explore <area-name>",
+            callback:    func() error {return explorePokemons(params)},
+        },
     }
 
     fmt.Println("pokedex>")
     scanner := bufio.NewScanner(os.Stdin)
 
     for scanner.Scan() {
+        input := scanner.Text()
         err := scanner.Err()
         if err != nil {
             fmt.Println("error reading input", err)
         }
-        cmd := commands[scanner.Text()]
-        if err := cmd.callback(); err != nil {
-            log.Println(err)
+        splited := strings.Split(input, " ")
+        if len(splited) > 1 {
+            params = splited[1]
+        }
+        cmd, ok := commands[splited[0]] 
+        if !ok {
+            log.Print("Command does not exist")
+        }else
+         if err := cmd.callback(); err != nil {
+            log.Print(err)
         }
     }
    
@@ -80,7 +95,7 @@ var cache = pokecache.NewCache(60)
 func getPokemons()  error {
     urlp := &url_
     if len(urlp.url) == 0 {
-        url_.url = "https://pokeapi.co/api/v2/location-area/"
+        url_.url = "https://pokeapi.co/api/v2/location-area/?offset=0&limit=20"
     }
     var body []byte
     var err error
@@ -150,7 +165,8 @@ func apiCall(url string) ([]byte, error) {
     body, err := io.ReadAll(res.Body)
     res.Body.Close()
     if res.StatusCode > 299 {
-        log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
+        err := errors.New("Not found")
+        return body, err
     }
     if err != nil {
         log.Fatal(err)
@@ -159,6 +175,29 @@ func apiCall(url string) ([]byte, error) {
     return body, nil
 }
 
+var exploringPokemons ExplorePokemons 
+
+func explorePokemons(area string) error {
+    var body []byte
+    var err error
+    val, found := cache.Get(area)
+    body = val
+    if !found {
+        fmt.Println("No cache found, getting pokemons from API")
+        body, err = apiCall("https://pokeapi.co/api/v2/location-area/" + area)
+        if err != nil {
+            return err
+        }
+        cache.Add(area, body)
+    }
+    json.Unmarshal([]byte(body), &exploringPokemons)
+    for _, val := range exploringPokemons.PokemonEncounters {
+        fmt.Println(val.Pokemon.Name)
+    }
+
+    
+    return nil
+}
 
 type pokemonAPI struct {
 	Count    int    `json:"count"`
@@ -178,4 +217,15 @@ type cliCommand struct {
 	callback    func() error
     url         string
     urlb        string
+}
+
+type ExplorePokemons struct {
+	PokemonEncounters    []PokemonEncounters    `json:"pokemon_encounters"`
+}
+type PokemonEncounters struct {
+	Pokemon        Pokemon          `json:"pokemon"`
+}
+type Pokemon struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
