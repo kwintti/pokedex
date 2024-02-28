@@ -11,6 +11,7 @@ import (
     "errors"
     "github.com/kwintti/pokecache"
     "strings"
+    "math/rand/v2"
 )
 
 func main() {
@@ -47,6 +48,11 @@ func readingInput() {
             name:        "exolore",
             description: "Get pokemons in the area. Usage: explore <area-name>",
             callback:    func() error {return explorePokemons(params)},
+        },
+        "catch": {
+            name:        "catch",
+            description: "Try to catch a pokemon. Usage: catch <pokemon name>",
+            callback:    func() error {return catchPokemon(params)},
         },
     }
 
@@ -199,6 +205,46 @@ func explorePokemons(area string) error {
     return nil
 }
 
+var catchingPokemons catchPokemonStats 
+var pokeDex = make(map[string]catchPokemonStats)
+
+func catchPokemon(name string) error {
+    body, err := apiCall("https://pokeapi.co/api/v2/pokemon/" + name)
+    if err != nil {
+        return err
+    }
+    json.Unmarshal([]byte(body), &catchingPokemons)
+    fmt.Println("Throwing a pokeball at ", name)
+    rnd := rand.IntN(100) 
+    exp := catchingPokemons.BaseExperience
+    probab := float32(exp)/float32(rnd+exp)
+    var catched bool
+    if probab < 0.7 {
+        fmt.Println(name, " was caught!")
+        catched = true
+    }else {
+        fmt.Println(name, " escaped!")
+    }
+    if catched {
+        pokeDex[name] = catchingPokemons
+    }
+    //fmt.Println("Name: ", catchingPokemons.Name)
+    //fmt.Println("Height: ", catchingPokemons.Height)
+    //fmt.Println("Weight: ", catchingPokemons.Weight)
+    //fmt.Println("Stats: ")
+    //for _, val := range catchingPokemons.Stats {
+    //    fmt.Println("  -", val.BaseStat, val.Stat.Name)
+    //}
+    //fmt.Println("Types: ")
+    //for _, val := range catchingPokemons.Types {
+    //    fmt.Println("  -", val.Type.Name)
+    //}
+    fmt.Println(catched, rnd, exp)
+
+    
+    return err
+}
+
 type pokemonAPI struct {
 	Count    int    `json:"count"`
 	Next     *string `json:"next"`
@@ -222,6 +268,30 @@ type cliCommand struct {
 type ExplorePokemons struct {
 	PokemonEncounters    []PokemonEncounters    `json:"pokemon_encounters"`
 }
+type catchPokemonStats struct {
+    BaseExperience int `json:"base_experience"`
+    Name            string `json:"name"`
+    Height          int     `json:"height"`
+    Weight          int     `json:"weight"`
+    Stats           Stats  `json:"stats"`
+    Types           Types   `json:"types"`
+}
+type Stats []struct {
+		BaseStat int `json:"base_stat"`
+		Effort   int `json:"effort"`
+		Stat     struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"stat"`
+} 
+
+type Types []struct {
+		Slot int `json:"slot"`
+		Type struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"type"`
+} 
 type PokemonEncounters struct {
 	Pokemon        Pokemon          `json:"pokemon"`
 }

@@ -14,6 +14,6 @@ Learning Go basics with this project.
 - [x] Commands map and mapb, call an API, get results, parse them and finally show them.
 - [x] Caching
 - [x] Explore locations, find pokemons
-- [ ] Catch Pokemons
+- [x] Catch Pokemons
 - [ ] Inspect command, see details about Pokemons you have already encountered
 - [ ] Pokedex command, show all catched Pokemons 
