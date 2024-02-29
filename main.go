@@ -54,6 +54,16 @@ func readingInput() {
             description: "Try to catch a pokemon. Usage: catch <pokemon name>",
             callback:    func() error {return catchPokemon(params)},
         },
+        "inspect": {
+            name:        "inspect",
+            description: "Inspect pokemons you already have in your pokedex",
+            callback:    func() error {return inspectPokemon(params)},
+        },
+        "pokedex": {
+            name:        "pokedex",
+            description: "List names of pokemons you have already catched",
+            callback:    openPokedex,
+        },
     }
 
     fmt.Println("pokedex>")
@@ -228,21 +238,40 @@ func catchPokemon(name string) error {
     if catched {
         pokeDex[name] = catchingPokemons
     }
-    //fmt.Println("Name: ", catchingPokemons.Name)
-    //fmt.Println("Height: ", catchingPokemons.Height)
-    //fmt.Println("Weight: ", catchingPokemons.Weight)
-    //fmt.Println("Stats: ")
-    //for _, val := range catchingPokemons.Stats {
-    //    fmt.Println("  -", val.BaseStat, val.Stat.Name)
-    //}
-    //fmt.Println("Types: ")
-    //for _, val := range catchingPokemons.Types {
-    //    fmt.Println("  -", val.Type.Name)
-    //}
-    fmt.Println(catched, rnd, exp)
-
     
     return err
+}
+
+func inspectPokemon(name string) error {
+    val, ok := pokeDex[name]
+    if !ok {
+        fmt.Println("you have not caught", name, "yet")
+        return nil 
+    }
+    fmt.Println("Name: ", val.Name)
+    fmt.Println("Height: ", val.Height)
+    fmt.Println("Weight: ", val.Weight)
+    fmt.Println("Stats: ")
+    for _, valu := range val.Stats {
+        fmt.Println("  -", valu.BaseStat, valu.Stat.Name)
+    }
+    fmt.Println("Types: ")
+    for _, valu := range val.Types {
+        fmt.Println("  -", valu.Type.Name)
+    }
+    return nil
+}
+func openPokedex() error {
+    if len(pokeDex) == 0 {
+        fmt.Println("Your Pokedex is empty")
+        return nil
+    }
+    fmt.Println("Your Pokedex:")
+    for key, _ := range pokeDex {
+        fmt.Println("  -", key)
+    }
+
+    return nil
 }
 
 type pokemonAPI struct {

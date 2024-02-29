@@ -15,5 +15,5 @@ Learning Go basics with this project.
 - [x] Caching
 - [x] Explore locations, find pokemons
 - [x] Catch Pokemons
-- [ ] Inspect command, see details about Pokemons you have already encountered
-- [ ] Pokedex command, show all catched Pokemons 
+- [x] Inspect command, see details about Pokemons you have already encountered
+- [x] Pokedex command, show all catched Pokemons 
